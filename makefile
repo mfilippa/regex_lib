@@ -21,14 +21,15 @@ VPATH += ./
 OBJDIR = ./obj
 
 # source files
-SRC = main.c
+SRC = main.c \
+	regex_lib.c
 
 # build target - linker command
 debug : $(SRC:%.c=$(OBJDIR)/%.o)
 	$(CC) $(CFLAGS) -o $@ $^
 
 # compile source files
-$(SRC:%.c=$(OBJDIR)/%.o) : $(SRC)
+$(OBJDIR)/%.o : %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 # auto dependencies - recompile if a header file changed
