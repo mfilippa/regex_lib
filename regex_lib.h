@@ -15,8 +15,8 @@
 // regex compile flags, OR all needed
 // REG_EXTENDED: use extended >> use ? + { | } ( )
 // REG_ICASE: ignore case
-// REG_NOSUB: report only success/fail in regexec()
-// REG_NEWLINE: new line handling, see documentation
+// REG_NOSUB: report only success/fail in search
+// REG_NEWLINE: newline \n divides string into multiple lines
 #define REGEX_COMPILE_FLAGS (REG_EXTENDED|REG_ICASE|REG_NEWLINE)
 
 // errors

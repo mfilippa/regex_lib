@@ -21,29 +21,13 @@ int main(void){
     unsigned int nsub;
 
     // source string
-    // char src_str[]="Test string 1234 #test# [CODE-10] <p>content</p> end";
-    // char src_str[]="Multiline line 1 [CODE-10]\nline 2 [CODE-35] test\nline 3 [CODE-257] test";
-    // char src_str[]="date 2019_01_03 filename.txt";
-    char src_str[]="this is a 50 char long long long long long string";
-    // char src_str[]="# h1\n## h2\n  - text #bold#";
-    // char src_str[]="This is $1 a sub $2 string $3";
-    // char src_str[]="substring test 11-22-33-44-55-66-77-88-99-00-11-22 end";
-
+    char src_str[]="In the USA, the date today is 12/25/2019";
 
     // regex string    
-    // char srch_regex[] ="string.+?4";
-    // char srch_regex[] ="\\[(.+?)-([0-9]+?)\\]";
-    // char srch_regex[] ="([0-9]+)_([0-9]+)_([0-9]+)";
-    char srch_regex[] ="(long) (long)";
-    // char srch_regex[] ="([0-9]+)-([0-9]+)-([0-9]+)-([0-9]+)-([0-9]+)-([0-9]+)-([0-9]+)-([0-9]+)-([0-9]+)-([0-9]+)";
-    // char srch_regex[] ="^## .+";
-    // char srch_regex[] ="00";
-    // char srch_regex[] ="\\$([0-9]+)";
+    char srch_regex[] ="([0-9]+)/([0-9]+)/([0-9]+)";
 
     // replace string
-    // char rpl_str[]="Year is $1, month is $2, day is $3";
-    char rpl_str[]="This is a $1 $2 string";
-    // char rpl_str[]="Sub $1 $2 $3 $4 $5 $6 $7 $8 $9 $10";
+    char rpl_str[]="For the rest of the world it is $2/$1/$3. Merry Xmas!";
     
     // search
     printf("Search example -------------------------------\n");
@@ -61,7 +45,6 @@ int main(void){
         // }
     }
     else printf("%s\n", regex_error_msg(error));
-    
 
     // replace
     printf("Replace example ------------------------------\n");
