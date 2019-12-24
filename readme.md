@@ -38,7 +38,10 @@ if (error==REGEX_ERR_NONE) {
 If there are subgroups, the start and length of each are stored in 'start[]' and 'len[]' arrays. 'nsub' will indicate how many subgroups were retrieved (size of arrays)
 
 ```
+<<<<<<< HEAD
 // extract subgroups
+=======
+>>>>>>> fbd1ac0e98c9d16081c98681e1aa50a4bb9b1436
 printf("Nr of groups: %u\n", nsub);
 if (nsub!=0) {
     for (int i=1;i<nsub+1;i++)
@@ -51,10 +54,13 @@ Exaxmple of replace:
 ```
 // replace string
 char rpl_str[]="For the rest of the world it is $2/$1/$3. Merry Xmas!";
+<<<<<<< HEAD
 error = regex_replace(src_str, str, srch_regex, rpl_str);
 if (error==REGEX_ERR_NONE){
     printf("Replaced string: '%s'\n", str);
 }
+=======
+>>>>>>> fbd1ac0e98c9d16081c98681e1aa50a4bb9b1436
 ```
 
 ## Limitations
