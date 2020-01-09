@@ -140,16 +140,15 @@ regex_err_t regex_replace(const char * source, char * dest,
                 else err = REGEX_ERR_BAD_REGEX;
             } 
             else {
-                // last replacement
-                if (nrep>0){
-                    CHECK_LEN(dest_idx+strlen(rpl_str+rpl_idx))
-                    memcpy(dest+dest_idx, rpl_str+rpl_idx, 
-                        strlen(rpl_str+rpl_idx));
-                }
+                // last replacement or no replacements
+                CHECK_LEN(dest_idx+strlen(rpl_str+rpl_idx))
+                memcpy(dest+dest_idx, rpl_str+rpl_idx, 
+                    strlen(rpl_str+rpl_idx));
+                *(dest+dest_idx+strlen(rpl_str+rpl_idx))=0;
                 err = REGEX_ERR_NOT_FOUND;
             }
         } while (err==REGEX_ERR_NONE);
-        if ((err==REGEX_ERR_NOT_FOUND)&&(nrep>0)) err = REGEX_ERR_NONE;
+        if (err==REGEX_ERR_NOT_FOUND) err = REGEX_ERR_NONE;
     } 
     return err;
 }
