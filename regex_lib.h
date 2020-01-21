@@ -5,6 +5,9 @@
 #ifndef _REGEX_LIB_H
 #define _REGEX_LIB_H
 
+// includes
+#include <regex.h>
+
 // max string size
 #define REGEX_MAX_STR_SIZE 4096
 
@@ -31,19 +34,48 @@ typedef enum regex_err_enum {
     REGEX_ERR_COUNT,
 } regex_err_t;
 
+// -----------------------------------------------------------------------------
 // search regular expression
+// -----------------------------------------------------------------------------
+// - source[REGEX_MAX_STR_SIZE]: source string to perform search on
+// - regex_search[REGEX_MAX_STR_SIZE]: regex string to search
+// - start[REGEX_MAX_GROUPS+1]: returns start index of each subgroup
+// - len[REGEX_MAX_GROUPS+1]: returns length of each subgroup
+// - nsub: returns nr of subgroups found in search
+// index 0 stores full string match
+// index 1+ stores all substrings found
+// returns: error (see regex_err_t)
 regex_err_t regex_search(const char * source, const char* regex_search, 
     unsigned int* start, unsigned int* len, unsigned int* nsub);
 
-// extract text
-regex_err_t regex_extract(const char * source, char * dest, 
+// -----------------------------------------------------------------------------
+// extract substring
+// -----------------------------------------------------------------------------
+// - dest[REGEX_MAX_STR_SIZE]: destination string to extract to
+// - source[REGEX_MAX_STR_SIZE]: source string to extract substring
+// - start: start index from source
+// - len: length of chars to extract
+// adds a NULL termination to string
+// returns: error (see regex_err_t)
+regex_err_t regex_extract(char * dest, const char * source,
     unsigned int start, unsigned int len);
 
+// -----------------------------------------------------------------------------
 // replace text
-regex_err_t regex_replace(const char * source, char * dest, 
-    const char * srch_regex, const char * rpl_str);
+// -----------------------------------------------------------------------------
+// - dest[REGEX_MAX_STR_SIZE]: destination to store replaced string
+// - source[REGEX_MAX_STR_SIZE]: source string to perform replacement
+// - regex_search[REGEX_MAX_STR_SIZE]: regex string to search
+// - rpl_str[REGEX_MAX_STR_SIZE]: regex string to replace
+// returns: error (see regex_err_t)
+regex_err_t regex_replace(const char * dest, const char * source,
+    const char * srch_regex, const char * rplc_regex);
 
+// -----------------------------------------------------------------------------
 // get error message
+// -----------------------------------------------------------------------------
+// - err_code: error code (see regex_err_t)
+// returns: error string [REGEX_MAX_STR_SIZE]
 char* regex_error_msg(regex_err_t err_code);
 
 #endif // _REGEX_LIB_H

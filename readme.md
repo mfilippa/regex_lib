@@ -46,12 +46,12 @@ if (nsub!=0) {
 }
 ```
 
-Exaxmple of replace:
+Example of replace:
 
 ```
 // replace string
 char rpl_str[]="For the rest of the world it is $2/$1/$3. Merry Xmas!";
-error = regex_replace(src_str, str, srch_regex, rpl_str);
+error = regex_replace(str, src_str, srch_regex, rpl_str);
 if (error==REGEX_ERR_NONE){
     printf("Replaced string: '%s'\n", str);
 }
@@ -59,7 +59,7 @@ if (error==REGEX_ERR_NONE){
 
 ## Limitations
 
-* This runs on linux only. Go to http://www.pcre.org/ to get a port for windows
+* This runs on linux only. Need more work to port to windows (http://www.pcre.org/)
 * This implements POSIX regular expressions, watch for differences with other implementations, like lack of '\d' and '\D'
 * A lot of sanity error checking is missing... just pass the right arguments and you won't have to worry about it (:
 

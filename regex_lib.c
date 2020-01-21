@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <regex.h>
 #include "regex_lib.h"
 
 // regex error msg size
@@ -18,8 +17,8 @@ char * error_msg[] = {
     "No error",     
     "Error: string not found",
     "Error: error in RegEx string",
-    "Error: string size exceeds REGEX_MAX_STR_SIZE",
-    "Error: number of subgroups exceeds REGEX_MAX_GROUPS",
+    "Error: string size error (REGEX_MAX_STR_SIZE)",
+    "Error: number of subgroups error (REGEX_MAX_GROUPS)",
     "Error: bad argument",
 };
 
@@ -29,7 +28,7 @@ regex_t re;
 // -----------------------------------------------------------------------------
 // compile regex
 // -----------------------------------------------------------------------------
-regex_err_t compile_regex(regex_t * re, const char * regex_str) {
+static regex_err_t compile_regex(regex_t * re, const char * regex_str) {
     regex_err_t err = REGEX_ERR_NONE;
     int status;
     // compile regex, returns 0 if successful
@@ -43,15 +42,40 @@ regex_err_t compile_regex(regex_t * re, const char * regex_str) {
 }
 
 // -----------------------------------------------------------------------------
+// replace text
+// -----------------------------------------------------------------------------
+// example:
+//   src_str  : 'this is a string'
+//   src_start: 8  src_len: 1
+//   rpl_str  : 'one another more'
+//   rpl_start: 4  rpl_len: 7
+//   >> dest_str : 'this is another string'
+static regex_err_t replace_string( const char * dest_str,
+    const char * src_str, unsigned int src_start, unsigned int src_len, 
+    const char * rpl_str, unsigned int rpl_start, unsigned int rpl_len) {
+    unsigned int len = strlen(src_str)-src_len+rpl_len;
+    regex_err_t err = REGEX_ERR_NONE;
+    if (len<REGEX_MAX_STR_SIZE) {
+        char * dest_idx = (char *) dest_str;
+        memcpy(dest_idx, src_str, sizeof(char)*src_start);
+        dest_idx += src_start;
+        memcpy(dest_idx, rpl_str+rpl_start, sizeof(char)*rpl_len);
+        dest_idx += rpl_len;
+        *dest_idx = 0;
+        strcat(dest_idx, src_str+src_start+src_len);
+    }
+    else err = REGEX_ERR_MAX_STR_LEN;
+    return err;
+}
+
+// -----------------------------------------------------------------------------
 // search regex
 // -----------------------------------------------------------------------------
 regex_err_t regex_search(const char * source, const char* regex_search, 
-    unsigned int* start, unsigned int* len, unsigned int* nsub){
+    unsigned int* start, unsigned int* len, unsigned int* src_nsub){
     regex_err_t err = REGEX_ERR_NONE;
-    int status;
-
-    // [0] stores search indexes, [1..REGEX_MAX_GROUPS+1] stores subgroup indexes
     regmatch_t match[REGEX_MAX_GROUPS+1]; 
+    int status;
 
     // compile regex, run search if successful
     err = compile_regex(&re, regex_search);
@@ -62,8 +86,8 @@ regex_err_t regex_search(const char * source, const char* regex_search,
             // return indexes to start/end of match
             if (re.re_nsub>REGEX_MAX_GROUPS) err = REGEX_ERR_MAX_GROUP;
             else {
-                *nsub = re.re_nsub;
-                for (int i=0;i<*nsub+1;i++){
+                *src_nsub = re.re_nsub;
+                for (int i=0;i<*src_nsub+1;i++){
                     start[i] = match[i].rm_so;
                     len[i] = match[i].rm_eo-match[i].rm_so;
                     if (i==re.re_nsub) break;  // last group
@@ -77,79 +101,102 @@ regex_err_t regex_search(const char * source, const char* regex_search,
 }
 
 // -----------------------------------------------------------------------------
-// extract text
+// extract substring
 // -----------------------------------------------------------------------------
-regex_err_t regex_extract(const char * source, char * dest, 
+regex_err_t regex_extract(char * dest, const char * source,
     unsigned int start, unsigned int len){
     regex_err_t err = REGEX_ERR_NONE;
-    if ((len<REGEX_MAX_STR_SIZE-1)&&(len!=0)){
+    if ((len<REGEX_MAX_STR_SIZE)&&(len!=0)){
         memcpy(dest, source+start, len);
         dest[len]=0;    // null termination
     }
-    else err = REGEX_ERR_BAD_ARG;
+    else err = REGEX_ERR_MAX_STR_LEN;
+    return err;
+}
+
+
+// -----------------------------------------------------------------------------
+// regex replace - no escape chars replaced
+// -----------------------------------------------------------------------------
+static regex_err_t regex_replace_ne(const char * dest, const char * source,
+    const char * srch_regex, const char * rplc_regex){
+    regex_err_t err = REGEX_ERR_NONE;
+    unsigned int src_start[REGEX_MAX_GROUPS+1];
+    unsigned int src_len[REGEX_MAX_GROUPS+1];
+    unsigned int src_nsub;
+    unsigned int rpl_start[REGEX_MAX_GROUPS+1];
+    unsigned int rpl_len[REGEX_MAX_GROUPS+1];
+    unsigned int rpl_nsub;
+
+    // search source string: get all groups start and len
+    err = regex_search(source, srch_regex, src_start, src_len, &src_nsub);
+    if (err==REGEX_ERR_NONE){
+        // determine if replacement will use subgroups
+        char subg_regex[] = "\\$[0-9]+";
+        err = regex_search(rplc_regex, subg_regex, rpl_start, rpl_len, 
+            &rpl_nsub);
+        if (err==REGEX_ERR_NONE){
+            // build replacement string
+            unsigned int idx;
+            char str[REGEX_MAX_STR_SIZE];
+            char tempstr[REGEX_MAX_STR_SIZE];
+            strcpy(str, rplc_regex);
+            do {
+                err = regex_search(str, subg_regex, rpl_start, rpl_len, 
+                    &rpl_nsub);
+                if (err==REGEX_ERR_NONE){
+                    regex_extract(tempstr, str, rpl_start[0]+1, rpl_len[0]-1);
+                    idx = atoi(tempstr);
+                    if (idx<=src_nsub) {
+                        err = replace_string(tempstr, 
+                            str, rpl_start[0], rpl_len[0],
+                            source, src_start[idx], src_len[idx]);
+                        if (err==REGEX_ERR_NONE) strcpy(str, tempstr);
+                    }
+                    else err = REGEX_ERR_BAD_REGEX;
+                }
+            } while (err == REGEX_ERR_NONE);
+            if (err == REGEX_ERR_NOT_FOUND) {
+                // replace string
+                err = replace_string(dest, 
+                    source, src_start[0], src_len[0],
+                    str, 0, strlen(str));
+            }
+        }
+        // else: direct replacement (no subgroups)
+        else {
+            // replace string
+            err = replace_string(dest, 
+                source, src_start[0], src_len[0],
+                rplc_regex, 0, strlen(rplc_regex));
+        }
+    }
     return err;
 }
 
 // -----------------------------------------------------------------------------
-// replace text
+// regex replace 
 // -----------------------------------------------------------------------------
-regex_err_t regex_replace(const char * source, char * dest, 
-    const char * srch_regex, const char * rpl_str){
+regex_err_t regex_replace(const char * dest, const char * source,
+    const char * srch_regex, const char * rplc_regex){
     regex_err_t err = REGEX_ERR_NONE;
-    int status;
-    unsigned int sub_start[REGEX_MAX_GROUPS+1];
-    unsigned int sub_len[REGEX_MAX_GROUPS+1];
-    unsigned int nsub, nrep;
-    #define CHECK_LEN(v) if (v>=REGEX_MAX_STR_SIZE-1) { \
-        err = REGEX_ERR_MAX_STR_LEN; break; }
-    // search source string: get all groups start and len
-    err = regex_search(source, srch_regex, sub_start, sub_len, &nsub);
+    char str[REGEX_MAX_STR_SIZE];
+    // execute search
+    err = regex_replace_ne(dest,source,srch_regex,rplc_regex);
+    // replace escaped chars
     if (err==REGEX_ERR_NONE){
-        // perform replacement
-        regmatch_t rpl_match;
-        unsigned int rpl_idx, dest_idx, len, idx;
-        #define TEMP_SIZE 3
-        char temp[TEMP_SIZE];
-        char sub_regex[] = "\\$[0-9]+";
-        compile_regex(&re, sub_regex);  // no need to check for err
-        rpl_idx = dest_idx = nrep = 0;
+        // new line '\n'
         do {
-            status = regexec(&re, rpl_str+rpl_idx, 1, &rpl_match, 0);
-            if (status==0) {
-                // copy string until $ char
-                CHECK_LEN(dest_idx+rpl_match.rm_so);
-                memcpy(dest+dest_idx, rpl_str+rpl_idx, rpl_match.rm_so);
-                dest_idx += rpl_match.rm_so;
-                // match nr to subgroup to insert
-                len = rpl_match.rm_eo-rpl_match.rm_so-1;    // minus $ char
-                if ((len>0)&&(len<=TEMP_SIZE-1)){
-                    memset(temp,0,TEMP_SIZE);
-                    memcpy(temp, rpl_str+rpl_idx+rpl_match.rm_so+1, len);
-                    idx = atoi(temp);
-                    if ((idx>0)&&(idx<=nsub)) {                        
-                        // insert subgroup
-                        CHECK_LEN(dest_idx+rpl_match.rm_so);
-                        memcpy(dest+dest_idx, source+sub_start[idx], 
-                            sub_len[idx]);
-                        dest_idx += sub_len[idx];                
-                        rpl_idx += rpl_match.rm_eo;
-                        nrep++;
-                    }
-                    else err = REGEX_ERR_BAD_REGEX;
-                }
-                else err = REGEX_ERR_BAD_REGEX;
-            } 
-            else {
-                // last replacement or no replacements
-                CHECK_LEN(dest_idx+strlen(rpl_str+rpl_idx))
-                memcpy(dest+dest_idx, rpl_str+rpl_idx, 
-                    strlen(rpl_str+rpl_idx));
-                *(dest+dest_idx+strlen(rpl_str+rpl_idx))=0;
-                err = REGEX_ERR_NOT_FOUND;
-            }
+            strcpy(str,dest);
+            err = regex_replace_ne(dest,str,"\\\\n", "\n");
         } while (err==REGEX_ERR_NONE);
-        if (err==REGEX_ERR_NOT_FOUND) err = REGEX_ERR_NONE;
-    } 
+        // tab '\t'
+        do {
+            strcpy(str,dest);
+            err = regex_replace_ne(dest,str,"\\\\t", "\t");
+        } while (err==REGEX_ERR_NONE);
+        err = REGEX_ERR_NONE;
+    }
     return err;
 }
 
@@ -164,3 +211,4 @@ char* regex_error_msg(regex_err_t err_code){
     else pstr = error_msg[REGEX_ERR_GET_ERR];
     return pstr;
 }
+

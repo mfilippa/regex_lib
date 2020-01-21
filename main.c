@@ -21,37 +21,37 @@ int main(void){
     unsigned int nsub;
 
     // source string
-    char src_str[]="In the USA, the date today is 12/25/2019";
+    char src_str[]="This is a string with a date: 12/25/2019";
 
     // regex string    
     char srch_regex[] ="([0-9]+)/([0-9]+)/([0-9]+)";
+    // char srch_regex[] ="01/08/2020";
 
     // replace string
-    char rpl_str[]="For the rest of the world it is $2/$1/$3. Merry Xmas!";
-    
-    // search
-    printf("Search example -------------------------------\n");
+    char rplc_str[]="$2/$1/$3";
+    // char rplc_str[]="25/15/2019";
+
+    // search and extract
+    printf("--------- Search and extract example -------------------\n");
     printf("Source string: '%s'\n", src_str);
     printf("Search regex: '%s'\n", srch_regex);
     error = regex_search(src_str, srch_regex, start, len, &nsub);
     if (error==REGEX_ERR_NONE) {
-        regex_extract(src_str, str, start[0], len[0]);
-        printf("Match: '%s'\n", str);
+        regex_extract(str, src_str, start[0], len[0]);
+        printf("Extracted text: '%s'\n", str);
         printf("Nr of groups: %u\n", nsub);
-        // if (nsub!=0){
-        //     for (int i=1;i<nsub+1;i++) {
-        //         printf("Group %u start %u len %u\n", i, start[i], len[i]);
-        //     }
-        // }
+        for (int i=0;i<nsub+1;i++) {
+            printf("Group %u start %u len %u\n", i, start[i], len[i]);
+        }
     }
     else printf("%s\n", regex_error_msg(error));
 
     // replace
-    printf("Replace example ------------------------------\n");
+    printf("--------- Replace example ------------------------------\n");
     printf("Source string: '%s'\n", src_str);
     printf("Search regex: '%s'\n", srch_regex);
-    printf("Replacement string: '%s'\n", rpl_str);
-    error = regex_replace(src_str, str, srch_regex, rpl_str);
+    printf("Replacement string: '%s'\n", rplc_str);
+    error = regex_replace(str, src_str, srch_regex, rplc_str);
     if (error==REGEX_ERR_NONE){
         printf("Replaced string: '%s'\n", str);
     }
